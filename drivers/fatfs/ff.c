@@ -1445,7 +1445,6 @@ BYTE check_fs (	/* 0:The FAT boot record, 1:Valid boot record but not an FAT, 2:
 		return 3;
 	if (LD_WORD(&fs->win[BS_55AA]) != 0xAA55)		/* Check record signature (always placed at offset 510 even if the sector size is >512) */
 		return 2;
-
 	if ((LD_DWORD(&fs->win[BS_FilSysType]) & 0xFFFFFF) == 0x544146)	/* Check "FAT" string */
 		return 0;
 	if ((LD_DWORD(&fs->win[BS_FilSysType32]) & 0xFFFFFF) == 0x544146)

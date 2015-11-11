@@ -80,6 +80,11 @@
 
 //#define f_tell(fp) ((fp)->fptr)
 /**************************************************************************/
+//                           INFO
+// in this version ARINC is recorded.
+// Arinc signal comes at GPIO port port 0, bit 5
+// at interrupts each pulse length is recorded, interrupts are at both falling and rising edges
+// pulse length is calculated using 16bit timer, which increments between each pulse front (up or down)
 
 /******************************* VARIABLES ********************************/
 extern volatile uint32_t timer16_0_counter;
@@ -87,7 +92,7 @@ extern volatile uint32_t one_second_counter;
 
 uint8_t ARINC = 0;
 uint8_t size = 100;
-//uint8_t max_value = 0;
+uint8_t max_value = 0;
 uint32_t maximum = 0;
 uint8_t t = 0;
 
@@ -176,8 +181,8 @@ void PIOINT0_IRQHandler(void){
 			}
 
 			if (START_RECORD) {
-                data_array[p] = DATA;
-                p ++;
+//                data_array[p] = DATA;
+//                p ++;
 				if (DATA >= maximum){  // if length of zero
 					BYTE_to_write &= ~(0x80>>i);  // write 0
 					i++;
@@ -202,9 +207,9 @@ void PIOINT0_IRQHandler(void){
 						memcpy(WRITE_PACKAGE, ARINC_PACKAGE, sizeof ARINC_PACKAGE);
 						memset(&ARINC_PACKAGE, 0, sizeof ARINC_PACKAGE);
 						BYTES_COUNTER = 0;
-                        GREEN_LED_on();
-                        memset(&data_array, 0, sizeof data_array);
-                        p = 0;
+//                        GREEN_LED_on();
+//                        memset(&data_array, 0, sizeof data_array);
+//                        p = 0;
 					}
 					else {
 						BYTES_COUNTER ++;
@@ -227,17 +232,10 @@ int main(void){
 
 	gpioInit();  //Initialise gpio
 
-    // Initialise Timer16_0 to tick at rate of 1/100000th of second.
-   	// Note that as this is a 16 bit timer, the maximum count we can
-   	// load into timer is 0xFFFF, or 65535. Default clock speed
-   	// set up by CMSIS SystemInit function - SystemCoreClock - is
-   	// 48MHz or 48000000 Hz. Dividing this by 2000 is 24000 which is
-   	// within appropriate timer16 maximum. This could be extended
-   	// if timer routine extended to make use of Prescale Counter register
-   	// Note by default LPC_SYSCON->SYSAHBCLKDIV is 1.
 /****************************************************************************************/
 	char buffer[13]={'l','u','c','h','0','0','0','0','.','d','a','t','\0'};
 	UINT br;
+	DIR dp;
 
 	res = f_mount(0, &Fatfs[0]);
 	if (res != FR_OK){
@@ -272,6 +270,14 @@ int main(void){
 
 	f_close(&fil);
 /****************************************************************************************/
+    // Initialise Timer16_0 to tick at rate of 1/100000th of second.
+   	// Note that as this is a 16 bit timer, the maximum count we can
+   	// load into timer is 0xFFFF, or 65535. Default clock speed
+   	// set up by CMSIS SystemInit function - SystemCoreClock - is
+   	// 48MHz or 48000000 Hz. Dividing this by 2000 is 24000 which is
+   	// within appropriate timer16 maximum. This could be extended
+   	// if timer routine extended to make use of Prescale Counter register
+   	// Note by default LPC_SYSCON->SYSAHBCLKDIV is 1.
 
 	timer16Init(0, CFG_CPU_CCLK/10000);
 	timer16_0_counter = 0;  // Initialise counter that counts Timer16_0 ticks
@@ -290,18 +296,11 @@ int main(void){
 					 gpioInterruptEvent_ActiveLow);   // Rising/Falling
 
 	gpioIntEnable(LISTEN_PORT, LISTEN_PORT_BIT);  // Enable the interrupt
-	/****************************************************************************************/
-
-// 		Try to mount drive
-//    res = f_mount(0, &Fatfs[0]);
-//    if (res != FR_OK){
-//       return 0;
-//    }
 
 	/****************************************************************************************/
     while (1) {
 	    if (!ARINC) {
-		    if (data_array[98] != 0) {  // read data for one second - and determine arinc rate
+		    if (data_array[99] != 0) {  // read data and determine max
 		    	maximum = FindMaxValueInArray();
 			}
 		}
@@ -321,7 +320,7 @@ int main(void){
     		memset(&WRITE_PACKAGE, 0, sizeof WRITE_PACKAGE);
     		RED_LED_TOGGLE();
     		RECORD_PACKET = 0; //put flag down
-    		GREEN_LED_off();
+//    		GREEN_LED_off();
     		endOfFile += PACKAGE_SIZE;
       }
     }
